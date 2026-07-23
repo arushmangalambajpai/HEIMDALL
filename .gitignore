@@ -1,0 +1,38 @@
+# ==========================================================
+# HEIMDALL
+# .gitignore
+# ==========================================================
+
+# Build outputs
+build/
+*.o
+*.obj
+*.out
+*.exe
+*.elf
+*.bin
+*.hex
+
+# Simulation outputs
+*.vcd
+*.fst
+*.log
+waves/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Operating System
+Thumbs.db
+Desktop.ini
+.DS_Store
