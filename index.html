@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEIMDALL - Smart Hardware Supervision Engine</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        },
+                        hardware: {
+                            gold: '#d97706',
+                            copper: '#b45309',
+                            silicon: '#0f172a',
+                            trace: '#0284c7',
+                            chip: '#1e293b'
+                        }
+                    },
+                    keyframes: {
+                        pulseFlow: {
+                            '0%': { transform: 'translateX(-100%)', opacity: '0' },
+                            '50%': { opacity: '1' },
+                            '100%': { transform: 'translateX(200%)', opacity: '0' },
+                        },
+                        traceGlow: {
+                            '0%, 100%': { opacity: '0.2' },
+                            '50%': { opacity: '0.8' }
+                        },
+                        clockTick: {
+                            '0%': { opacity: '0.3' },
+                            '50%': { opacity: '1' },
+                            '100%': { opacity: '0.3' }
+                        },
+                        waveShift: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' }
+                        }
+                    },
+                    animation: {
+                        'pulse-flow': 'pulseFlow 2.5s infinite linear',
+                        'trace-glow': 'traceGlow 4s ease-in-out infinite',
+                        'clock-tick': 'clockTick 1s infinite steps(1)',
+                        'wave-shift': 'waveShift 8s linear infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Hardware PCB Grid Background Pattern */
+        .pcb-grid {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(14, 165, 233, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+        }
+
+        .pcb-grid-light {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+        }
+
+        /* Semiconductor Wafer Pattern Overlay */
+        .silicon-pattern {
+            background-image: radial-gradient(rgba(13, 148, 136, 0.12) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        /* Bus trace line styles */
+        .bus-line {
+            stroke-dasharray: 8 4;
+            animation: dash 30s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased custom-scrollbar selection:bg-teal-500 selection:text-slate-950">
+
+    <!-- Sticky Navigation Header -->
+    <header class="sticky top-0 z-50 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo & Hardware Tag -->
+                <a href="#hero" class="flex items-center space-x-3 group">
+                    <div class="p-2 bg-gradient-to-br from-teal-500 to-emerald-600 text-slate-950 rounded-xl shadow-md shadow-teal-500/20 group-hover:scale-105 transition">
+                        <i data-lucide="cpu" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-lg tracking-tight text-white font-mono">HEIMDALL</span>
+                            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-teal-400 border border-teal-500/30">RTL v1.0</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400 block -mt-1">HARDWARE SUPERVISION CORE</span>
+                    </div>
+                </a>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-1 text-xs font-mono font-medium text-slate-300">
+                    <a href="#why-needed" class="px-3 py-2 rounded-lg hover:text-teal-400 hover:bg-slate-900 transition">01. THE PROBLEM</a>
+                    <a href="#difference" class="px-3 py-2 rounded-lg hover:text-teal-400 hover:bg-slate-900 transition">02. DUAL-LAYER</a>
+                    <a href="#architecture" class="px-3 py-2 rounded-lg hover:text-teal-400 hover:bg-slate-900 transition">03. RTL ARCHITECTURE</a>
+                    <a href="#simulator" class="px-3 py-2 rounded-lg text-teal-400 hover:bg-slate-900 transition font-semibold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+                        04. LOGIC ANALYZER
+                    </a>
+                    <a href="#applications" class="px-3 py-2 rounded-lg hover:text-teal-400 hover:bg-slate-900 transition">05. DEPLOYMENT</a>
+                    <a href="#timeline" class="px-3 py-2 rounded-lg hover:text-teal-400 hover:bg-slate-900 transition">06. FLOW</a>
+                </nav>
+
+                <!-- Call to Action -->
+                <div class="flex items-center space-x-3">
+                    <a href="#simulator" class="bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-mono font-bold px-4 py-2 rounded-lg transition shadow-lg shadow-teal-500/20 flex items-center gap-2">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                        <span>RUN RTL TESTBENCH</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SECTION 1: QUESTION 1 - WHAT IS HEIMDALL? (Animated PCB PCB Background) -->
+    <section id="hero" class="relative py-20 lg:py-32 bg-slate-950 pcb-grid border-b border-slate-800 overflow-hidden">
+        <!-- Background Verilog Code Fading Overlay -->
+        <div class="absolute inset-0 opacity-[0.03] font-mono text-[10px] pointer-events-none select-none p-6 text-teal-400 overflow-hidden leading-tight">
+            module supervisor_top #( parameter CLK_FREQ = 50000000 ) ( input wire clk, input wire rst_n, input wire heartbeat_in, output wire sys_reset ); reg [31:0] timeout_cnt; always @(posedge clk or negedge rst_n) begin if(!rst_n) timeout_cnt <= 0; else if(heartbeat_in) timeout_cnt <= 0; else timeout_cnt <= timeout_cnt + 1; end endmodule
+        </div>
+
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <!-- Hardware Spec Tag -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-teal-500/40 text-teal-400 text-xs font-mono mb-8 shadow-inner">
+                <i data-lucide="circuit-board" class="w-4 h-4 text-teal-400"></i>
+                <span>Verilog HDL Hardware Supervision IP Core</span>
+            </div>
+
+            <!-- Question 1 Answer (Single Simple Sentence) -->
+            <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight max-w-4xl mx-auto">
+                HEIMDALL is a hardware system that continuously checks whether another computer is still working correctly.
+            </h1>
+
+            <p class="mt-6 text-base sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-sans">
+                An independent Verilog core designed to run alongside main processors in critical embedded systems.
+            </p>
+
+            <!-- LIVE INTERACTIVE SIGNAL FLOW DIAGRAM -->
+            <div class="mt-14 max-w-4xl mx-auto bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative backdrop-blur-md">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+                    <span class="text-xs font-mono font-bold text-teal-400 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                        INTERACTIVE SIGNAL BUS DIAGRAM
+                    </span>
+                    <span class="text-[11px] font-mono text-slate-500">Click components to inspect hardware signals</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center relative">
+                    <!-- Component 1: Primary Microcontroller -->
+                    <div id="card-mcu" onclick="inspectModule('mcu')" class="bg-slate-950 border-2 border-slate-700 hover:border-teal-500 p-5 rounded-xl text-center cursor-pointer transition group">
+                        <div class="w-12 h-12 mx-auto bg-slate-900 text-slate-300 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 group-hover:text-teal-400 transition">
+                            <i data-lucide="cpu" class="w-6 h-6"></i>
+                        </div>
+                        <div class="font-bold text-white text-sm">Main Processor</div>
+                        <div class="text-[11px] font-mono text-slate-400 mt-1">ARM / RISC-V / MCU</div>
+                    </div>
+
+                    <!-- Interactive Bus Signal Arrow 1 -->
+                    <div class="hidden md:flex flex-col items-center justify-center relative">
+                        <span class="text-[10px] font-mono text-teal-400 mb-1">Heartbeat Pulse & Response</span>
+                        <div class="w-full h-1.5 bg-slate-800 rounded relative overflow-hidden">
+                            <div class="absolute inset-0 w-1/3 bg-teal-400 animate-pulse-flow"></div>
+                        </div>
+                        <div class="text-[9px] font-mono text-slate-500 mt-1">32-bit Parallel Bus</div>
+                    </div>
+
+                    <!-- Component 2: HEIMDALL Engine -->
+                    <div id="card-heimdall" onclick="inspectModule('heimdall')" class="bg-slate-950 border-2 border-teal-500 p-5 rounded-xl text-center shadow-lg shadow-teal-500/10 cursor-pointer transition group relative">
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-500 text-slate-950 font-mono font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            RTL SUPERVISOR
+                        </div>
+                        <div class="w-12 h-12 mx-auto bg-teal-500/10 text-teal-400 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i data-lucide="shield-check" class="w-6 h-6"></i>
+                        </div>
+                        <div class="font-bold text-white text-sm">HEIMDALL Core</div>
+                        <div class="text-[11px] font-mono text-teal-400 mt-1">Independent Hardware</div>
+                    </div>
+                </div>
+
+                <!-- Live Signal Inspector Drawer (Interactive Reveal) -->
+                <div id="signal-inspector" class="mt-6 pt-4 border-t border-slate-800 text-left bg-slate-950/80 p-4 rounded-xl font-mono text-xs">
+                    <div class="flex items-center justify-between text-teal-400 mb-2">
+                        <span id="inspector-title" class="font-bold">SIGNAL INSPECTOR: Selected System Bus</span>
+                        <span class="text-[10px] text-slate-500">Clk: 50 MHz</span>
+                    </div>
+                    <p id="inspector-body" class="text-slate-400 leading-relaxed font-sans text-xs">
+                        Click on the Main Processor or HEIMDALL Core above to view pinouts and live signal interaction details.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: QUESTION 2 - WHY IS THIS NEEDED? (Hardware Failure Scenarios) -->
+    <section id="why-needed" class="py-20 bg-slate-900 border-b border-slate-800 relative pcb-grid">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Question 02</span>
+                <h2 class="text-3xl font-extrabold text-white mt-2">Why is hardware supervision necessary?</h2>
+                <p class="text-slate-400 text-sm sm:text-base mt-2">Software bugs or hardware faults can trap processors in silent failure states.</p>
+            </div>
+
+            <!-- Story Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Story 1 -->
+                <div class="bg-slate-950 border border-slate-800 hover:border-rose-500/60 rounded-2xl p-6 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center mb-4 group-hover:scale-105 transition">
+                        <i data-lucide="bot" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">An Autonomous Robot Freezes</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+                        A memory glitch freezes the motor controller mid-turn. Without external reset logic, the robot continues driving blindly forward.
+                    </p>
+                </div>
+
+                <!-- Story 2 -->
+                <div class="bg-slate-950 border border-slate-800 hover:border-amber-500/60 rounded-2xl p-6 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-105 transition">
+                        <i data-lucide="satellite" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">A Satellite Stops Responding</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+                        Cosmic radiation corrupts a single register bit in orbit. Without independent hardware supervision, communication is lost permanently.
+                    </p>
+                </div>
+
+                <!-- Story 3 -->
+                <div class="bg-slate-950 border border-slate-800 hover:border-teal-500/60 rounded-2xl p-6 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4 group-hover:scale-105 transition">
+                        <i data-lucide="factory" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">An Industrial Line Hangs</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+                        A power line transient forces a factory PLC into an infinite loop. The system continues outputting stuck control signals.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: QUESTION 3 - TRADITIONAL WATCHDOG VS HEIMDALL -->
+    <section class="py-20 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-14">
+                <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Question 03</span>
+                <h2 class="text-3xl font-extrabold text-white mt-2">Traditional Watchdogs vs. HEIMDALL</h2>
+                <p class="text-slate-400 text-sm mt-2">A traditional watchdog timer only checks if the computer is pulsing—not if its logic is sound.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Traditional Watchdog -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 relative">
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-xs font-mono text-slate-400 uppercase">Standard Approach</span>
+                        <span class="px-2.5 py-0.5 bg-slate-800 text-slate-300 font-mono text-[10px] rounded border border-slate-700">Simple Timer WDT</span>
+                    </div>
+
+                    <!-- Timing Diagram Concept -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 font-mono text-xs">
+                        <div class="text-slate-500 text-[10px] mb-2">PULSE TIMING:</div>
+                        <div class="flex items-center gap-1 text-slate-400">
+                            <span>WDT_CLK</span>
+                            <div class="flex-grow h-4 bg-slate-900 rounded border border-slate-800 flex items-center px-2 text-[10px]">
+                                <span class="text-rose-400">|---|---|---| [Blind Reset]</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="space-y-3 text-xs text-slate-300 font-sans">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Detects complete system freezes or software deadlocks.</span>
+                        </li>
+                        <li class="flex items-start gap-2 text-rose-400">
+                            <i data-lucide="x" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                            <span><strong>Flaw:</strong> If code gets trapped in a loop that still resets the timer, the WDT thinks the CPU is healthy.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- HEIMDALL Engine -->
+                <div class="bg-slate-900 border-2 border-teal-500 rounded-2xl p-6 sm:p-8 relative shadow-xl shadow-teal-500/5">
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-xs font-mono text-teal-400 uppercase">HEIMDALL Engine</span>
+                        <span class="px-2.5 py-0.5 bg-teal-500/10 text-teal-400 font-mono text-[10px] rounded border border-teal-500/30">Dual Verification</span>
+                    </div>
+
+                    <!-- Dynamic Timing Diagram -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-teal-500/30 mb-6 font-mono text-xs">
+                        <div class="text-teal-400 text-[10px] mb-2">DUAL-CHECK SIGNAL PROTOCOL:</div>
+                        <div class="space-y-1 text-[10px]">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 w-16">1. Heartbeat</span>
+                                <span class="text-teal-400">[ Pulse Verified OK ]</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 w-16">2. Challenge</span>
+                                <span class="text-emerald-400">[ Dynamic Math Validated ]</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="space-y-3 text-xs text-slate-300 font-sans">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-teal-400 shrink-0 mt-0.5"></i>
+                            <span>Checks liveness via continuous heartbeat window monitoring.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-teal-400 shrink-0 mt-0.5"></i>
+                            <span>Issues dynamic challenge-response math queries to verify program execution paths.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: QUESTION 4 - WHAT MAKES HEIMDALL DIFFERENT? -->
+    <section id="difference" class="py-20 bg-slate-900 border-b border-slate-800 pcb-grid">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Question 04</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">What makes HEIMDALL different?</h2>
+            <p class="text-slate-400 text-sm mt-2">It continuously poses two verification questions to the main CPU:</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 text-left">
+                <!-- Question 1 Card -->
+                <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-teal-500/50 transition">
+                    <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 font-mono font-bold flex items-center justify-center mb-4">
+                        01
+                    </div>
+                    <h3 class="text-lg font-bold text-white">"Are you alive?"</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed font-sans">
+                        <strong>Heartbeat Verification:</strong> The main CPU must issue periodic pulses to a designated hardware register window. If a pulse arrives too early or too late, HEIMDALL flags an error.
+                    </p>
+                </div>
+
+                <!-- Question 2 Card -->
+                <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-teal-500/50 transition">
+                    <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 font-mono font-bold flex items-center justify-center mb-4">
+                        02
+                    </div>
+                    <h3 class="text-lg font-bold text-white">"Are you executing correctly?"</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed font-sans">
+                        <strong>Challenge-Response Logic:</strong> HEIMDALL generates a pseudorandom query. The CPU must perform a specific calculation and respond within a strict time frame to prove valid control flow.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: QUESTION 5 - HOW DOES HEIMDALL WORK? (Module Inspector & Architecture) -->
+    <section id="architecture" class="py-20 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Question 05</span>
+                <h2 class="text-3xl font-extrabold text-white mt-2">How does HEIMDALL work inside?</h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-2">Explore the five modular Verilog hardware blocks below.</p>
+            </div>
+
+            <!-- MODULE CARDS GRID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+                <!-- Module 1 -->
+                <button onclick="selectRtlModule(1)" id="mod-btn-1" class="bg-slate-900 border-2 border-teal-500 rounded-xl p-4 text-left transition hover:border-teal-400 focus:outline-none">
+                    <div class="text-[10px] font-mono text-teal-400 font-bold">01. LIVENESS</div>
+                    <div class="text-sm font-bold text-white mt-1">Heartbeat Engine</div>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">heartbeat_engine.v</div>
+                </button>
+
+                <!-- Module 2 -->
+                <button onclick="selectRtlModule(2)" id="mod-btn-2" class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-left transition hover:border-teal-400 focus:outline-none">
+                    <div class="text-[10px] font-mono text-teal-400 font-bold">02. LOGIC</div>
+                    <div class="text-sm font-bold text-white mt-1">Challenge Engine</div>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">challenge_engine.v</div>
+                </button>
+
+                <!-- Module 3 -->
+                <button onclick="selectRtlModule(3)" id="mod-btn-3" class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-left transition hover:border-teal-400 focus:outline-none">
+                    <div class="text-[10px] font-mono text-teal-400 font-bold">03. CONTROL</div>
+                    <div class="text-sm font-bold text-white mt-1">Supervisor FSM</div>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">supervisor_fsm.v</div>
+                </button>
+
+                <!-- Module 4 -->
+                <button onclick="selectRtlModule(4)" id="mod-btn-4" class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-left transition hover:border-teal-400 focus:outline-none">
+                    <div class="text-[10px] font-mono text-teal-400 font-bold">04. ACTION</div>
+                    <div class="text-sm font-bold text-white mt-1">Recovery Manager</div>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">recovery_manager.v</div>
+                </button>
+
+                <!-- Module 5 -->
+                <button onclick="selectRtlModule(5)" id="mod-btn-5" class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-left transition hover:border-teal-400 focus:outline-none">
+                    <div class="text-[10px] font-mono text-teal-400 font-bold">05. LOGGING</div>
+                    <div class="text-sm font-bold text-white mt-1">Event Logger</div>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">event_logger.v</div>
+                </button>
+            </div>
+
+            <!-- MODULE INSPECTOR DETAIL DISPLAY -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-2xl">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <div class="flex items-center gap-2 text-teal-400 font-mono text-xs mb-2">
+                            <i data-lucide="layers" class="w-4 h-4"></i>
+                            <span id="rtl-file-display">RTL SOURCE: rtl/heartbeat_engine.v</span>
+                        </div>
+                        <h3 id="rtl-title-display" class="text-2xl font-bold text-white">Heartbeat Timing Engine</h3>
+                        <p id="rtl-desc-display" class="text-slate-300 text-xs leading-relaxed mt-3 font-sans">
+                            Monitors incoming periodic hardware pulses from the primary processor. Uses dual-threshold counters to ensure timing falls within strictly predefined cycles.
+                        </p>
+
+                        <div class="mt-6 space-y-4 font-sans text-xs">
+                            <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                                <span class="font-bold text-teal-400 block mb-1">What happens on fault detection?</span>
+                                <span id="rtl-fault-display" class="text-slate-300">If pulse counter exceeds max timeout window, asserts <code>hb_timeout</code> trigger to Supervisor FSM.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Code & Signals Tab Box -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-[11px] overflow-x-auto custom-scrollbar">
+                        <div class="text-slate-500 text-[10px] mb-2 flex justify-between border-b border-slate-800 pb-2">
+                            <span>VERILOG HARDWARE INTERFACE</span>
+                            <span>IEEE 1364-2001</span>
+                        </div>
+                        <pre id="rtl-code-display" class="text-slate-300"><code>module heartbeat_engine (
+  input  wire clk,
+  input  wire rst_n,
+  input  wire heartbeat_in,
+  output reg  hb_timeout
+);
+  // Cycle counter logic
+endmodule</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: INTERACTIVE LOGIC ANALYZER & SIMULATOR -->
+    <section id="simulator" class="py-20 bg-slate-900 border-b border-slate-800 pcb-grid scroll-mt-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Educational Hardware Simulation</span>
+                <h2 class="text-3xl font-extrabold text-white mt-2">Interactive Logic Analyzer Testbench</h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-2">Control clock cycles and inject fault conditions to observe HEIMDALL's hardware recovery flow in real-time.</p>
+            </div>
+
+            <div class="bg-slate-950 border-2 border-slate-800 rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-3">
+                <!-- Controls Column -->
+                <div class="p-6 bg-slate-900/90 border-r border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono font-bold text-teal-400 uppercase mb-2">Simulation Walkthrough</div>
+                        <h3 id="sim-step-title" class="text-lg font-bold text-white">Step 1: Normal System Operation</h3>
+                        <p id="sim-step-desc" class="text-xs text-slate-400 mt-2 leading-relaxed font-sans">
+                            Press "Advance Clock Cycle" to send valid heartbeat timing signals to the core.
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 mt-8 font-mono text-xs">
+                        <button onclick="advanceSimulationStep()" class="w-full py-2.5 px-4 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span id="sim-btn-label">Advance Clock Cycle</span>
+                        </button>
+                        <button onclick="injectSimFault()" class="w-full py-2 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold rounded-lg border border-rose-500/30 transition flex items-center justify-center gap-2">
+                            <i data-lucide="zap" class="w-4 h-4"></i> Inject Challenge Failure
+                        </button>
+                        <button onclick="resetSimulation()" class="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg border border-slate-700 transition flex items-center justify-center gap-2">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Testbench
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visualization Panel -->
+                <div class="lg:col-span-2 p-6 bg-slate-950 flex flex-col justify-between min-h-[400px]">
+                    <!-- Live Register Readouts -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 font-mono text-xs">
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[9px]">FSM STATE</span>
+                            <span id="val-state" class="text-teal-400 font-bold">STATE_MONITOR</span>
+                        </div>
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[9px]">TIMEOUT COUNTER</span>
+                            <span id="val-counter" class="text-white font-bold">0x0002 / 0x00FF</span>
+                        </div>
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[9px]">CHALLENGE PROMPT</span>
+                            <span id="val-challenge" class="text-amber-400 font-bold">0x7F3A910B</span>
+                        </div>
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[9px]">SYS_RESET PIN</span>
+                            <span id="val-reset" class="text-emerald-400 font-bold">1 (HIGH/SAFE)</span>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Output Window -->
+                    <div class="flex-grow bg-slate-900/60 border border-slate-800 rounded-xl p-4 font-mono text-[11px] overflow-y-auto max-h-56 custom-scrollbar space-y-1" id="sim-terminal-log">
+                        <div class="text-slate-500">[TB_INIT] Simulation started. Clock frequency set to 50MHz...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7: WHERE COULD HEIMDALL BE USED? -->
+    <section id="applications" class="py-20 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Deployment Targets</span>
+                <h2 class="text-3xl font-extrabold text-white mt-2">Where could HEIMDALL be used?</h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-2">Designed for high-reliability embedded and FPGA platforms.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-teal-500/50 transition">
+                    <div class="w-10 h-10 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
+                        <i data-lucide="satellite" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Nanosatellite Flight Computers</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed font-sans">
+                        Protects space payloads against single-event upsets (SEUs) caused by cosmic radiation bit flips.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-teal-500/50 transition">
+                    <div class="w-10 h-10 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
+                        <i data-lucide="car" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Automotive ECUs</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed font-sans">
+                        Monitors steer-by-wire and brake control modules to prevent uncontrolled drive outputs during software faults.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-teal-500/50 transition">
+                    <div class="w-10 h-10 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Medical Infusion Devices</h3>
+                    <p class="text-slate-400 text-xs mt-2 leading-relaxed font-sans">
+                        Provides a hardware safeguard to guarantee dosage software never hangs in an active pumping loop.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 8: FROM IDEA TO HARDWARE (TIMELINE) -->
+    <section id="timeline" class="py-20 bg-slate-900 border-b border-slate-800 pcb-grid">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono font-bold tracking-widest text-teal-400 uppercase">Co-Design Methodology</span>
+                <h2 class="text-3xl font-extrabold text-white mt-2">From Idea to Verilog RTL</h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-2">A structured engineering process from golden software reference model to synthesizable hardware.</p>
+            </div>
+
+            <div class="space-y-6 relative before:absolute before:inset-0 before:left-6 before:w-0.5 before:bg-slate-800">
+                <div class="relative flex items-start gap-6">
+                    <div class="w-12 h-12 rounded-full bg-teal-500 text-slate-950 font-mono font-bold flex items-center justify-center shrink-0 z-10">
+                        01
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 flex-grow">
+                        <h3 class="text-base font-bold text-white">Problem Definition & Spec Freeze</h3>
+                        <p class="text-slate-400 text-xs mt-1 font-sans">Defined dual-layer supervision parameters and fault recovery specifications.</p>
+                    </div>
+                </div>
+
+                <div class="relative flex items-start gap-6">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 border border-teal-500 text-teal-400 font-mono font-bold flex items-center justify-center shrink-0 z-10">
+                        02
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 flex-grow">
+                        <h3 class="text-base font-bold text-white">Embedded C Golden Model</h3>
+                        <p class="text-slate-400 text-xs mt-1 font-sans">Created cycle-accurate software simulation models for all five hardware modules.</p>
+                    </div>
+                </div>
+
+                <div class="relative flex items-start gap-6">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 border border-teal-500 text-teal-400 font-mono font-bold flex items-center justify-center shrink-0 z-10">
+                        03
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 flex-grow">
+                        <h3 class="text-base font-bold text-white">Synthesizable IEEE Verilog RTL</h3>
+                        <p class="text-slate-400 text-xs mt-1 font-sans">Implemented modules using standard, clean IEEE 1364-2001 Verilog syntax.</p>
+                    </div>
+                </div>
+
+                <div class="relative flex items-start gap-6">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-mono font-bold flex items-center justify-center shrink-0 z-10">
+                        <i data-lucide="check" class="w-6 h-6"></i>
+                    </div>
+                    <div class="bg-slate-950 border border-emerald-500/40 rounded-xl p-5 flex-grow">
+                        <h3 class="text-base font-bold text-white">Verification Closure (25/25 Tests Passed)</h3>
+                        <p class="text-slate-400 text-xs mt-1 font-sans">Simulated execution using Icarus Verilog and GTKWave waveform analysis tools.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 text-slate-500 py-12 text-xs font-mono border-t border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div class="flex items-center space-x-3">
+                <div class="p-1.5 bg-teal-500 text-slate-950 rounded">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                </div>
+                <span class="font-bold text-slate-200">HEIMDALL RTL Core v1.0</span>
+            </div>
+            <p class="font-sans">Designed for hardware/software co-design standards.</p>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE SCRIPT -->
+    <script>
+        // Module inspector data database
+        const modulesData = {
+            1: {
+                file: "rtl/heartbeat_engine.v",
+                title: "Heartbeat Timing Engine",
+                desc: "Monitors incoming periodic hardware pulses from the primary processor. Uses dual-threshold counters to ensure timing falls within strictly predefined cycles.",
+                fault: "If pulse counter exceeds max timeout window, asserts hb_timeout trigger to Supervisor FSM.",
+                code: `module heartbeat_engine (\n  input  wire clk,\n  input  wire rst_n,\n  input  wire heartbeat_in,\n  output reg  hb_timeout\n);\n  // Cycle counter logic\nendmodule`
+            },
+            2: {
+                file: "rtl/challenge_engine.v",
+                title: "Challenge-Response Engine",
+                desc: "Generates linear-feedback shift register (LFSR) pseudo-random challenge math prompts and evaluates processor calculations.",
+                fault: "If CPU returns invalid mathematical response, immediately flags logic error.",
+                code: `module challenge_engine (\n  input  wire clk,\n  input  wire [31:0] resp_in,\n  output reg  [31:0] challenge_out,\n  output reg  resp_valid\n);\n  // LFSR & Verification\nendmodule`
+            },
+            3: {
+                file: "rtl/supervisor_fsm.v",
+                title: "Supervisor Finite State Machine",
+                desc: "Central decision block managing operational states: RESET, INIT, MONITOR, FAULT, and RECOVERY.",
+                fault: "Transitions system to RECOVERY state when any subsystem reports a logic or timing fault.",
+                code: `module supervisor_fsm (\n  input  wire clk,\n  input  wire hb_fault,\n  input  wire resp_fault,\n  output reg  [2:0] current_state\n);\n  // FSM State transitions\nendmodule`
+            },
+            4: {
+                file: "rtl/recovery_manager.v",
+                title: "Recovery Manager Block",
+                desc: "Controls physical reset line pulses and safe recovery timing sequences sent to the target processor.",
+                fault: "Pulls hard reset low for a pre-configured cycle duration before attempting system restart.",
+                code: `module recovery_manager (\n  input  wire trigger_reset,\n  output reg  sys_reset_n\n);\n  // Hardware Reset Pulse Driver\nendmodule`
+            },
+            5: {
+                file: "rtl/event_logger.v",
+                title: "Event Fault Logger (FIFO)",
+                desc: "A 16-entry circular memory buffer storing fault cause codes and timestamp counters for post-mortem analysis.",
+                fault: "Logs timestamp, fault source ID, and state code into non-volatile register memory.",
+                code: `module event_logger (\n  input  wire clk,\n  input  wire [7:0] fault_code,\n  output reg  [127:0] log_fifo\n);\n  // Register Memory Array\nendmodule`
+            }
+        };
+
+        function selectRtlModule(id) {
+            for(let i=1; i<=5; i++) {
+                const btn = document.getElementById(`mod-btn-${i}`);
+                if (i === id) {
+                    btn.classList.add('border-teal-500', 'border-2');
+                    btn.classList.remove('border-slate-800', 'border');
+                } else {
+                    btn.classList.remove('border-teal-500', 'border-2');
+                    btn.classList.add('border-slate-800', 'border');
+                }
+            }
+
+            const data = modulesData[id];
+            document.getElementById('rtl-file-display').innerText = `RTL SOURCE: ${data.file}`;
+            document.getElementById('rtl-title-display').innerText = data.title;
+            document.getElementById('rtl-desc-display').innerText = data.desc;
+            document.getElementById('rtl-fault-display').innerText = data.fault;
+            document.getElementById('rtl-code-display').innerText = data.code;
+        }
+
+        // Live Diagram Inspector
+        function inspectModule(type) {
+            const title = document.getElementById('inspector-title');
+            const body = document.getElementById('inspector-body');
+
+            if (type === 'mcu') {
+                title.innerText = "INSPECTOR: Main Target Processor";
+                body.innerText = "The primary CPU executes application code and is configured to continuously toggle the heartbeat pin and compute LFSR challenge math.";
+            } else if (type === 'heimdall') {
+                title.innerText = "INSPECTOR: HEIMDALL Supervision Engine";
+                body.innerText = "An independent hardware block implemented in synthesizable Verilog. Operates on a dedicated clock domain to verify CPU health.";
+            }
+        }
+
+        // Logic Analyzer Simulator Step Management
+        let simStep = 0;
+
+        function appendSimLog(msg, colorClass = "text-slate-300") {
+            const term = document.getElementById('sim-terminal-log');
+            const line = document.createElement('div');
+            line.className = colorClass;
+            line.innerText = `> ${msg}`;
+            term.appendChild(line);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function advanceSimulationStep() {
+            simStep++;
+            if (simStep === 1) {
+                document.getElementById('sim-step-title').innerText = "Step 1: Heartbeats Arriving";
+                document.getElementById('sim-step-desc').innerText = "Processor sends pulse within 100 cycles. FSM stays in MONITOR state.";
+                document.getElementById('val-state').innerText = "STATE_MONITOR";
+                document.getElementById('val-counter').innerText = "0x0014 / 0x00FF";
+                document.getElementById('val-reset').innerText = "1 (HIGH/SAFE)";
+                appendSimLog("[CLK +20] Heartbeat pulse received. Counter reset to zero.", "text-teal-400");
+            } else if (simStep === 2) {
+                document.getElementById('sim-step-title').innerText = "Step 2: Timeout Exceeded!";
+                document.getElementById('sim-step-desc').innerText = "No heartbeat received! Counter reached maximum threshold. FSM moves to FAULT.";
+                document.getElementById('val-state').innerText = "STATE_FAULT";
+                document.getElementById('val-counter').innerText = "0x00FF / 0x00FF";
+                appendSimLog("[CLK +100] ERROR: Heartbeat timeout exceeded limit!", "text-rose-400");
+            } else if (simStep === 3) {
+                document.getElementById('sim-step-title').innerText = "Step 3: Hardware Reset Driven";
+                document.getElementById('sim-step-desc').innerText = "Recovery manager pulls SYS_RESET pin LOW to reboot main target processor.";
+                document.getElementById('val-state').innerText = "STATE_RECOVERY";
+                document.getElementById('val-reset').innerText = "0 (LOW/RESET)";
+                appendSimLog("[RECOVERY] Driving SYS_RESET pin LOW for 16 clock cycles.", "text-amber-400");
+            } else if (simStep === 4) {
+                document.getElementById('sim-step-title').innerText = "Step 4: System Restored";
+                document.getElementById('sim-step-desc').innerText = "Processor successfully rebooted. System returns to normal MONITOR state.";
+                document.getElementById('val-state').innerText = "STATE_MONITOR";
+                document.getElementById('val-counter').innerText = "0x0000 / 0x00FF";
+                document.getElementById('val-reset').innerText = "1 (HIGH/SAFE)";
+                appendSimLog("[SUCCESS] System reset complete. Core monitoring resumed.", "text-emerald-400");
+                simStep = 0;
+            }
+        }
+
+        function injectSimFault() {
+            document.getElementById('sim-step-title').innerText = "Logic Fault Injected!";
+            document.getElementById('sim-step-desc').innerText = "Incorrect challenge math answer detected from processor!";
+            document.getElementById('val-state').innerText = "STATE_FAULT";
+            document.getElementById('val-challenge').innerText = "0xINVALID";
+            appendSimLog("[FAULT INJECTED] Challenge answer 0xDEADBEEF incorrect!", "text-rose-400 font-bold");
+        }
+
+        function resetSimulation() {
+            simStep = 0;
+            document.getElementById('sim-step-title').innerText = "Step 1: Normal System Operation";
+            document.getElementById('sim-step-desc').innerText = "Press 'Advance Clock Cycle' to send valid heartbeat timing signals to the core.";
+            document.getElementById('val-state').innerText = "STATE_MONITOR";
+            document.getElementById('val-counter').innerText = "0x0002 / 0x00FF";
+            document.getElementById('val-challenge').innerText = "0x7F3A910B";
+            document.getElementById('val-reset').innerText = "1 (HIGH/SAFE)";
+            document.getElementById('sim-terminal-log').innerHTML = '<div class="text-slate-500">[TB_INIT] Simulation started. Clock frequency set to 50MHz...</div>';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
